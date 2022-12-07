@@ -81,14 +81,47 @@ class ViewController: UIViewController {
     ])
 
     var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
-    snapshot.appendSections([0])
-    for i in 0...20 {
-      snapshot.appendItems([i])
+    for section in 0...5 {
+      snapshot.appendSections([section])
+      for i in 0...1 {
+        snapshot.appendItems([(section * 10) + i])
+      }
     }
     self.snapshot = snapshot
+    dataSource.apply(snapshot)
 
-    self.dataSource.apply(snapshot)
+    collectionView.delegate = self
   }
 
 }
 
+extension ViewController: UICollectionViewDelegate {
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    let sheet = UIAlertController(title: "Menu", message: "\(indexPath)", preferredStyle: .actionSheet)
+
+    sheet.addAction(UIAlertAction(title: "Section reload", style: .default, handler: { action in
+      let section = self.snapshot.sectionIdentifiers[indexPath.section]
+      self.snapshot.reloadSections([section])
+    }))
+
+    sheet.addAction(UIAlertAction(title: "Section delete", style: .destructive, handler: { action in
+      let section = self.snapshot.sectionIdentifiers[indexPath.section]
+      self.snapshot.deleteSections([section])
+      self.dataSource.apply(self.snapshot)
+    }))
+
+    sheet.addAction(UIAlertAction(title: "Item reload", style: .default, handler: { action in
+      let item = self.snapshot.itemIdentifiers(inSection: indexPath.section)[indexPath.item]
+      self.snapshot.reloadItems([item])
+    }))
+
+    sheet.addAction(UIAlertAction(title: "Item delete", style: .destructive, handler: { action in
+      let item = self.snapshot.itemIdentifiers(inSection: indexPath.section)[indexPath.item]
+      self.snapshot.deleteItems([item])
+      self.dataSource.apply(self.snapshot)
+    }))
+
+    sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    self.present(sheet, animated: true)
+  }
+}
