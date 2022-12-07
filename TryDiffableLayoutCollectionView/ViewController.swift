@@ -42,6 +42,7 @@ class ViewController: UIViewController {
   private lazy var layout: UICollectionViewCompositionalLayout = {
     UICollectionViewCompositionalLayout { (sectionIndex, environment) -> NSCollectionLayoutSection? in
       let snapshotSection = self.snapshot.sectionIdentifiers[sectionIndex]
+//      let snapshotSection = self.dataSource.snapshot().sectionIdentifiers[sectionIndex]
 
       let size = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1),
                                         heightDimension: .estimated(44)) // flexible height, min 200 px
@@ -105,9 +106,18 @@ extension ViewController: UICollectionViewDelegate {
     }))
 
     sheet.addAction(UIAlertAction(title: "Section delete", style: .destructive, handler: { action in
+      // After reloadSections, if you access snapshot in layout
       let section = self.snapshot.sectionIdentifiers[indexPath.section]
+
+      // This will crash
       self.snapshot.deleteSections([section])
-      self.dataSource.apply(self.snapshot)
+      self.dataSource.apply(self.snapshot, animatingDifferences: false)
+
+      // But this will not
+//      var snapshot = self.snapshot
+//      snapshot.deleteSections([section])
+//      self.dataSource.apply(snapshot)
+//      self.snapshot = snapshot
     }))
 
     sheet.addAction(UIAlertAction(title: "Item reload", style: .default, handler: { action in
