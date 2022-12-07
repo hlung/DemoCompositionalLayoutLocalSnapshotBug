@@ -41,7 +41,13 @@ class ViewController: UIViewController {
 
   private lazy var layout: UICollectionViewCompositionalLayout = {
     UICollectionViewCompositionalLayout { (sectionIndex, environment) -> NSCollectionLayoutSection? in
+
+      // After snapshot.reloadSections
+
+      // This crashes
       let snapshotSection = self.snapshot.sectionIdentifiers[sectionIndex]
+
+      // This does NOT crash
 //      let snapshotSection = self.dataSource.snapshot().sectionIdentifiers[sectionIndex]
 
       let size = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1),
@@ -84,9 +90,7 @@ class ViewController: UIViewController {
     var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
     for section in 0...5 {
       snapshot.appendSections([section])
-      for i in 0...1 {
-        snapshot.appendItems([(section * 10) + i])
-      }
+      snapshot.appendItems([section * 10])
     }
     self.snapshot = snapshot
     dataSource.apply(snapshot)
@@ -106,29 +110,9 @@ extension ViewController: UICollectionViewDelegate {
     }))
 
     sheet.addAction(UIAlertAction(title: "Section delete", style: .destructive, handler: { action in
-      // After reloadSections, if you access snapshot in layout
       let section = self.snapshot.sectionIdentifiers[indexPath.section]
-
-      // This will crash
       self.snapshot.deleteSections([section])
       self.dataSource.apply(self.snapshot, animatingDifferences: false)
-
-      // But this will not
-//      var snapshot = self.snapshot
-//      snapshot.deleteSections([section])
-//      self.dataSource.apply(snapshot)
-//      self.snapshot = snapshot
-    }))
-
-    sheet.addAction(UIAlertAction(title: "Item reload", style: .default, handler: { action in
-      let item = self.snapshot.itemIdentifiers(inSection: indexPath.section)[indexPath.item]
-      self.snapshot.reloadItems([item])
-    }))
-
-    sheet.addAction(UIAlertAction(title: "Item delete", style: .destructive, handler: { action in
-      let item = self.snapshot.itemIdentifiers(inSection: indexPath.section)[indexPath.item]
-      self.snapshot.deleteItems([item])
-      self.dataSource.apply(self.snapshot)
     }))
 
     sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
