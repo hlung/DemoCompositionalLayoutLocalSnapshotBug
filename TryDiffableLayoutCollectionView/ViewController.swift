@@ -14,21 +14,26 @@ class ViewController: UIViewController {
 
   var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
 
-  private let cellReuseIdentifier = "HomeCell"
-
   private lazy var dataSource: UICollectionViewDiffableDataSource<Section, Item> = {
+
+    let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, Int> { cell, indexPath, item in
+      var contentConfiguration = cell.defaultContentConfiguration()
+      contentConfiguration.text = "\(item) (\(Int.random(in: 1...100)))"
+      cell.layer.borderWidth = 1
+      cell.layer.borderColor = UIColor.gray.cgColor
+      cell.contentConfiguration = contentConfiguration
+    }
+
     return UICollectionViewDiffableDataSource<Section, Item>(
       collectionView: self.collectionView,
       cellProvider: { [weak self] (collectionView, indexPath, item) -> UICollectionViewCell? in
         guard let self = self else { return nil }
-
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: self.cellReuseIdentifier, for: indexPath)
-        if let cell = cell as? HomeCell {
-          cell.titleLabel.text = "\(item)"
-        }
-        return cell
+        return collectionView.dequeueConfiguredReusableCell(using: cellRegistration,
+                                                            for: indexPath,
+                                                            item: item)
       }
     )
+
   }()
 
   private lazy var collectionView: UICollectionView = {
@@ -40,15 +45,18 @@ class ViewController: UIViewController {
   }()
 
   private lazy var layout: UICollectionViewCompositionalLayout = {
-    UICollectionViewCompositionalLayout { (sectionIndex, environment) -> NSCollectionLayoutSection? in
+    UICollectionViewCompositionalLayout { [weak self] (sectionIndex, environment) -> NSCollectionLayoutSection? in
+      guard let self = self else { return nil }
+
+      print("UICollectionViewCompositionalLayout sectionIndex \(sectionIndex)")
 
       // After snapshot.reloadSections
 
-      // This crashes
-      let snapshotSection = self.snapshot.sectionIdentifiers[sectionIndex]
+      // This crashes with index out of bounds
+//      let snapshotSection = self.snapshot.sectionIdentifiers[sectionIndex]
 
       // This does NOT crash
-//      let snapshotSection = self.dataSource.snapshot().sectionIdentifiers[sectionIndex]
+      let snapshotSection = self.dataSource.snapshot().sectionIdentifiers[sectionIndex]
 
       let size = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1),
                                         heightDimension: .estimated(44)) // flexible height, min 200 px
@@ -77,7 +85,6 @@ class ViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    collectionView.register(HomeCell.self, forCellWithReuseIdentifier: cellReuseIdentifier)
     view.addSubview(collectionView)
 
     NSLayoutConstraint.activate([
@@ -90,7 +97,7 @@ class ViewController: UIViewController {
     var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
     for section in 0...5 {
       snapshot.appendSections([section])
-      snapshot.appendItems([section * 10])
+      snapshot.appendItems([section])
     }
     self.snapshot = snapshot
     dataSource.apply(snapshot)
@@ -105,14 +112,21 @@ extension ViewController: UICollectionViewDelegate {
     let sheet = UIAlertController(title: "Menu", message: "\(indexPath)", preferredStyle: .actionSheet)
 
     sheet.addAction(UIAlertAction(title: "Section reload", style: .default, handler: { action in
-      let section = self.snapshot.sectionIdentifiers[indexPath.section]
-      self.snapshot.reloadSections([section])
+      let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
+
+//      self.snapshot.reloadSections([section])
+//      self.dataSource.applySnapshotUsingReloadData(self.snapshot)
+
+      var newSnapshot = self.dataSource.snapshot()
+      newSnapshot.reloadSections([section])
+      self.dataSource.apply(newSnapshot, animatingDifferences: false)
     }))
 
     sheet.addAction(UIAlertAction(title: "Section delete", style: .destructive, handler: { action in
-      let section = self.snapshot.sectionIdentifiers[indexPath.section]
-      self.snapshot.deleteSections([section])
-      self.dataSource.apply(self.snapshot, animatingDifferences: false)
+      var snapshot = self.dataSource.snapshot()
+      let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
+      snapshot.deleteSections([section])
+      self.dataSource.apply(snapshot, animatingDifferences: false)
     }))
 
     sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
