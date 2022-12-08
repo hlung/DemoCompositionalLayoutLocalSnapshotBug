@@ -53,10 +53,11 @@ class ViewController: UIViewController {
       // After snapshot.reloadSections
 
       // This crashes with index out of bounds
-//      let snapshotSection = self.snapshot.sectionIdentifiers[sectionIndex]
+      // Note: I know we are currently not using snapshotSection. This is just to simulate when we do.
+      let snapshotSection = self.snapshot.sectionIdentifiers[sectionIndex]
 
-      // This does NOT crash
-      let snapshotSection = self.dataSource.snapshot().sectionIdentifiers[sectionIndex]
+      // no crash
+//      let snapshotSection = self.dataSource.snapshot().sectionIdentifiers[sectionIndex]
 
       let size = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1),
                                         heightDimension: .estimated(44)) // flexible height, min 200 px
@@ -112,21 +113,29 @@ extension ViewController: UICollectionViewDelegate {
     let sheet = UIAlertController(title: "Menu", message: "\(indexPath)", preferredStyle: .actionSheet)
 
     sheet.addAction(UIAlertAction(title: "Section reload", style: .default, handler: { action in
-      let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
+      let section = self.snapshot.sectionIdentifiers[indexPath.section]
 
-//      self.snapshot.reloadSections([section])
-//      self.dataSource.applySnapshotUsingReloadData(self.snapshot)
+      // no crash
+//      var newSnapshot = self.snapshot
+//      newSnapshot.reloadSections([section])
+//      self.dataSource.apply(newSnapshot, animatingDifferences: false)
 
-      var newSnapshot = self.dataSource.snapshot()
-      newSnapshot.reloadSections([section])
-      self.dataSource.apply(newSnapshot, animatingDifferences: false)
+      // crash
+      self.snapshot.reloadSections([section])
+      self.dataSource.apply(self.snapshot, animatingDifferences: false)
     }))
 
     sheet.addAction(UIAlertAction(title: "Section delete", style: .destructive, handler: { action in
-      var snapshot = self.dataSource.snapshot()
-      let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
-      snapshot.deleteSections([section])
-      self.dataSource.apply(snapshot, animatingDifferences: false)
+      let section = self.snapshot.sectionIdentifiers[indexPath.section]
+
+      // no crash
+//      var newSnapshot = self.snapshot
+//      newSnapshot.deleteSections([section])
+//      self.dataSource.apply(newSnapshot, animatingDifferences: false)
+
+      // crash
+      self.snapshot.deleteSections([section])
+      self.dataSource.apply(self.snapshot, animatingDifferences: false)
     }))
 
     sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
